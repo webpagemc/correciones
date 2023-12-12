@@ -1,146 +1,93 @@
 const fs = require("fs");
 
-class ProductManager{  // gestiona un conjunto de productos
-    #products = []  //arreglo vacio
-    #id = 1 
+class ProductManager {
+    #id = 1;
     path;
-    
+
     constructor(filePath) {
-        this.path = filePath // con esto asigno el valor de filePath a this.path en el constructor
-
+        this.path = filePath; // Asigna el valor de filePath a this.path en el constructor
     }
 
-    saveProducts() {
-        fs.writeFileSync(this.path, JSON.stringify(this.#products, null, 2))   // donde se guardan los productos
-      }
-      
-    addProduct(product){
-        if(!product.title || !product.description || !product.price || !product.thumbnail ||!product.code || !product.stock)
-            return console.log('Complete todos los campos')
-    
-            const existingProduct = this.#products.find(existingProduct => existingProduct.code === product.code)
-            if(existingProduct){
-                return console.log('El codigo del producto ya existe')
-            }
-            
-            const productId = this.#id++   //id incrementable
-            product.id = productId        // verifico que se le asigne el id al nuevo producto
-            
-
-            this.#products.push(product)     // lo subo 
-            this.saveProducts() // para guardar todos los productos en el archivo
-        }
-        
-        getProducts() {
-            return [...this.#products]
-
-        }
-        
-         getProductById(id){
-             const foundProduct = this.#products.find(product => product.id === id) // si product.id es = a id -> guardalo en product.. product = foundproduct 
-             if(foundProduct){
-                 return foundProduct
-             }
-             if (!foundProduct){
-                 return console.log('Not found')
-             }
-                 const existingContent = fs.readFileSync(this.path);
-                 const products = existingContent.trim() !== "" ? JSON.parse(existingContent) : [];
-                 const product = products.find(product => product.id === id)
-                 if (product) {
-                     return product
-                 } else {
-                     return null
-                 }
-            }
-                 
-        updateProduct(id, fieldToUpdate, newValue) {
-            
-            let productUpdated = false   // en caso de que no se encuentre el producto
-            
-            this.#products.forEach(product => {   // uso forEach para buscar en cada producto 
-                if (product.id === id) {     // si encontramos una coincidencia con el id
-                    product[fieldToUpdate] = newValue  // que se guarde en fieldToUpdate con un nuevo valor  
-                    productUpdated = true      // si encuentro producto es true
-                }
-            })
-
-       
-        // si productUpdated es true..
-            if (productUpdated) {         
-                this.saveProducts()
-                return true
-            } 
-        //si productUpdated es false..
-            else {
-                console.log('no se encontró el producto')
-                return false
-            }
-        }
-        
-        
-        deleteProduct(id){
-            const updatedProducts = this.#products.filter(product => product.id !== id)
-                if (updatedProducts.length < this.#products.length) {   // si el array de updatedprotucts es menor que products, o sea si se elimino algo  
-                    this.#products = updatedProducts   // entonces que se actualiza el array de products
-                    this.saveProducts() // para que se actualice tambien en el archivo
-                    return true
-                 } 
-                    else {
-                    return false
-                }
-        }
-
+    saveProducts(data) {
+        // Guarda los productos en el archivo especificado
+        fs.writeFileSync(this.path, JSON.stringify(data));
     }
-    
 
-// TESTEO 
+    readFile() {
+        // Lee el contenido del archivo y lo convierte de JSON a un array, o retorna un array vacío si el archivo está vacío o no se puede parsear.
+        const fileContent = fs.readFileSync(this.path, "utf-8");
+        return JSON.parse(fileContent) || [];
+    }
 
-// const prueba = new ProductManager()
-const filePath = "./products.json"
-const prueba = new ProductManager(filePath)
-console.log('Productos: ', prueba.getProducts())
+    addProduct(product) {
+        const allProducts = this.readFile(); // Lee todos los productos existentes desde el archivo
 
-prueba.addProduct({
-    title: 'producto prueba',
-    description: 'Este es un producto prueba',
-    price: 200,
-    thumbnail: 'Sin imagen',
-    code: 'abc123',
-    stock: 25,
-})
+        // Validación de campos del producto
+        if (!product.title || !product.description || !product.price || !product.thumbnail || !product.code || !product.stock) {
+            return console.log('Complete todos los campos');
+        }
 
-console.log('Producto recientemente agregado: ', prueba.getProducts())
+        const existingProduct = allProducts.find(existingProduct => existingProduct.code === product.code);
+        if (existingProduct) {
+            return console.log('El código del producto ya existe');
+        }
 
-// Y SI LO AGREGO OTRA VEZ ? 
+        const productId = this.#id++; // ID incrementable
+        product.id = productId; // Asigna el ID al nuevo producto
 
-prueba.addProduct({
-    title: 'producto prueba',
-    description: 'Este es un producto prueba',
-    price: 200,
-    thumbnail: 'Sin imagen',
-    code: 'abc123',
-    stock: 25,
-})
+        allProducts.push(product); // Añade el nuevo producto al array existente
+        this.saveProducts(allProducts); // Guarda todos los productos en el archivo
+    }
 
-console.log('Producto recientemente agregado: ', prueba.getProducts()) // aca deberia saltar que ya existe
+    getProducts() {
+        // Retorna el array de productos obtenido del archivo
+        return this.readFile();
+    }
 
-// Y SI AGREGO UNO NUEVO 
+    getProductById(id) {
+        // Busca y retorna un producto por su ID, utilizando readFile para obtener todos los productos
+        const foundProduct = this.readFile().find(product => product.id.toString() === id.toString());
+        if (foundProduct) {
+            return foundProduct;
+        } else {
+            console.log('Producto no encontrado');
+            return null;
+        }
+    }
 
-prueba.addProduct({
-    title: 'producto prueba2',
-    description: 'Este es un producto prueba2',
-    price: 600,
-    thumbnail: 'Sin imagen2',
-    code: 'abc666',
-    stock: 25,
-})
+    updateProduct(id, fieldToUpdate, newValue) {
+        let productUpdated = false; // Variable para controlar si se actualizó el producto
 
-console.log('Producto recientemente agregado: ', prueba.getProducts()) 
+        const allProducts = this.readFile(); // Lee todos los productos existentes desde el archivo
 
-//
-const productId = 1 
-console.log('Producto encontrado:', prueba.getProductById(productId))
+        allProducts.forEach(product => {
+            if (product.id === id) {
+                product[fieldToUpdate] = newValue; // Actualiza el campo especificado con el nuevo valor
+                productUpdated = true; // Marca que se ha actualizado el producto
+            }
+        });
 
+        if (productUpdated) {
+            this.saveProducts(allProducts); // Guarda los productos actualizados en el archivo
+            return true;
+        } else {
+            console.log('No se encontró el producto');
+            return false;
+        }
+    }
 
-module.exports = ProductManager // para exportar el productmanager
+    deleteProduct(id) {
+        let allProducts = this.readFile(); // Lee todos los productos existentes desde el archivo
+
+        const updatedProducts = allProducts.filter(product => product.id !== id); // Filtra los productos excluyendo el indicado para eliminar
+        if (updatedProducts.length < allProducts.length) {
+            allProducts = updatedProducts; // Actualiza el array de productos
+            this.saveProducts(allProducts); // Guarda los productos actualizados en el archivo
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+module.exports = ProductManager;

@@ -1,8 +1,8 @@
 const express = require('express')
 const ProductManager = require('./ProductManager')
-const productManager = new ProductManager('./products.json')
+const productManager = new ProductManager('src/products.json')
 const app = express()
-const port = 6000
+const port = 8080
 
 app.get('/products', (req, res) => {   // 1er endpoint para leer el archivo de productos
     const limit = req.query.limit
